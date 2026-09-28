@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CivicPath AI: Transforming complex institutional procedures, bureaucratic forms, and legal instructions into personalized, accessible step-by-step guidance while preserving 100% of critical requirements. Powered by Supabase & Gemini.">
+  <title>CivicPath AI — Hyper-Personalized Bureaucracy & Procedure Copilot</title>
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+  <!-- Top Global Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-logo" id="brand-logo">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">CivicPath <span class="gradient-accent">AI</span></span>
+          <span class="logo-badge">Preservation Engine v3.0</span>
+        </div>
+      </div>
+
+      <!-- Quick Preset Selector -->
+      <div class="preset-selector-wrapper">
+        <label for="procedure-preset-select" class="sr-only">Select Institutional Procedure</label>
+        <span class="preset-label">Procedure:</span>
+        <select id="procedure-preset-select" class="custom-select" aria-label="Select Institutional Procedure">
+          <option value="uscis-stem-opt">🇺🇸 USCIS STEM OPT Extension (Form I-765 & 8 CFR § 214)</option>
+          <option value="medicaid-appeal">🏥 Medicaid Denial Fair Hearing Appeal (42 CFR § 431)</option>
+          <option value="irs-compromise">🏛️ IRS Offer in Compromise (Form 656 & § 7122)</option>
+          <option value="tenant-shield">🏠 City Housing Voucher & Eviction Defense Notice</option>
+          <option value="custom-doc">📄 [Custom Ingestion] Upload / Paste Document</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Header Controls & Cloud Sync Indicator -->
+    <div class="header-right">
+      <!-- Supabase Cloud Sync Status Badge -->
+      <div class="cloud-sync-badge" id="cloud-sync-badge" title="Real-Time PostgreSQL Sync (Supabase)">
+        <span class="sync-dot live"></span>
+        <span class="sync-text" id="sync-status-text">Supabase Cloud Active</span>
+      </div>
+
+      <!-- Language Localization -->
+      <div class="control-group">
+        <label for="language-select" class="sr-only">Language</label>
+        <select id="language-select" class="icon-select" title="Localization Language">
+          <option value="en">🌐 English (US)</option>
+          <option value="es">🌐 Español (Spanish)</option>
+          <option value="hi">🌐 हिन्दी (Hindi)</option>
+          <option value="zh">🌐 简体中文 (Chinese)</option>
+          <option value="fr">🌐 Français (French)</option>
+          <option value="ar">🌐 العربية (Arabic)</option>
+        </select>
+      </div>
+
+      <!-- Reading Complexity Level -->
+      <div class="reading-level-pill" title="Toggle Simplification Target">
+        <span class="pill-label">Clarity:</span>
+        <button class="level-btn" data-level="simple" id="btn-level-simple">ELI5 / Simple</button>
+        <button class="level-btn active" data-level="plain" id="btn-level-plain">Plain (Gr. 6)</button>
+        <button class="level-btn" data-level="pro" id="btn-level-pro">Legal Audit</button>
+      </div>
+
+      <!-- Text to Speech Audio Narration -->
+      <div class="audio-narration-control">
+        <button id="btn-toggle-voice" class="btn-icon" title="Listen to Personalized Steps (Web Speech Audio)">
+          <svg class="icon-voice" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <span id="voice-status-text">Audio Copilot</span>
+        </button>
+      </div>
+
+      <!-- API Key Config (Optional Gemini Live Mode) -->
+      <button id="btn-api-modal" class="btn-ghost" title="Configure Live Gemini API Key">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span class="api-tag">Gemini API</span>
+      </button>
+
+      <!-- Theme Switcher & High Contrast Toggle -->
+      <button id="btn-theme-toggle" class="btn-icon" title="Toggle Theme (Dark / Light / High-Contrast)">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Real-time Verification & Impact Metrics Bar -->
+  <section class="metrics-bar" id="metrics-bar">
+    <div class="metric-item">
+      <div class="metric-icon green">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <div class="metric-content">
+        <span class="metric-val" id="metric-preservation">100.0%</span>
+        <span class="metric-sub">Statutory Requirement Preservation</span>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <div class="metric-item">
+      <div class="metric-icon purple">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      </div>
+      <div class="metric-content">
+        <span class="metric-val"><span id="metric-reading-before">Grade 17.8</span> → <span class="highlight-green" id="metric-reading-after">Grade 5.8</span></span>
+        <span class="metric-sub">Flesch-Kincaid Reading Grade (Readable)</span>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <div class="metric-item">
+      <div class="metric-icon amber">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+      <div class="metric-content">
+        <span class="metric-val" id="metric-pruned">62% Pruned</span>
+        <span class="metric-sub">Irrelevant Clauses Filtered For You</span>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <div class="metric-item">
+      <div class="metric-icon red">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </div>
+      <div class="metric-content">
+        <span class="metric-val" id="metric-pitfalls">3 Fatal Pitfalls</span>
+        <span class="metric-sub">Active Disqualification Warnings Caught</span>
+      </div>
+    </div>
+
+    <div class="metric-divider"></div>
+
+    <div class="metric-actions">
+      <button class="btn-primary-sm" id="btn-export-plan" title="Download Complete Execution Guide">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Export Action Plan
+      </button>
+      <button class="btn-secondary-sm" id="btn-export-ical" title="Sync Statutory Deadlines to Your Calendar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        Add Deadlines (.ICS)
+      </button>
+    </div>
+  </section>
+
+  <!-- Ingestion Drawer / Custom Input Modal -->
+  <section class="custom-ingestion-section hidden" id="custom-ingestion-section">
+    <div class="custom-ingestion-card">
+      <div class="ingestion-header">
+        <div class="ingestion-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <h3>Multi-Modal Institutional Procedure Ingestion</h3>
+        </div>
+        <button id="btn-close-custom" class="btn-icon" aria-label="Close custom ingestion">&times;</button>
+      </div>
+
+      <p class="ingestion-desc">Drop an institutional PDF, government policy, immigration form instructions, court summons, or paste complex statutory language. Our Dual-Pass AI will parse, verify, and personalize it.</p>
+
+      <div class="ingestion-inputs">
+        <div class="drop-zone" id="doc-drop-zone">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path><path d="M12 12v9"></path><path d="m8 16 4-4 4 4"></path></svg>
+          <p><strong>Click to upload</strong> or drag and drop institutional PDF/TXT</p>
+          <span class="subtext">Supports PDF, DOCX, TXT, Medical/Legal Scans</span>
+          <input type="file" id="file-input" class="hidden-input" accept=".txt,.pdf,.doc,.docx,.md">
+        </div>
+
+        <div class="paste-zone">
+          <label for="custom-text-input" class="sr-only">Paste institutional text</label>
+          <textarea id="custom-text-input" placeholder="Or paste raw bureaucratic/institutional instructions here... (e.g. 'Pursuant to Section 8 CFR § 214.2(f)(10)(ii)(C), the qualifying student must file Form I-765 within 60 days of the DSO recommendation and no earlier than 90 days prior to the expiration of the initial post-completion OPT...')"></textarea>
+          <div class="paste-zone-footer">
+            <span id="char-count">0 characters</span>
+            <button class="btn-primary" id="btn-process-custom">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              Run Preservation Pipeline
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Multi-Stage Pipeline Progress Indicator -->
+      <div class="pipeline-progress-box hidden" id="pipeline-progress-box">
+        <div class="pipeline-stages">
+          <div class="stage-step" id="stage-1"><span class="stage-num">1</span> Text Extraction & Tokenization</div>
+          <div class="stage-step" id="stage-2"><span class="stage-num">2</span> Statutory Constraint Audit</div>
+          <div class="stage-step" id="stage-3"><span class="stage-num">3</span> Plain Language Synthesis</div>
+          <div class="stage-step" id="stage-4"><span class="stage-num">4</span> Formal Verification Check</div>
+          <div class="stage-step" id="stage-5"><span class="stage-num">5</span> Graph Personalization</div>
+        </div>
+        <div class="pipeline-progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Triage & Personalization Bar (Dynamic Question Adaptive Engine) -->
+  <section class="triage-section" id="triage-section">
+    <div class="triage-container">
+      <div class="triage-header">
+        <div class="triage-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path></svg>
+          <span>Dynamic Personalization Triage</span>
+        </div>
+        <h2 class="triage-title">Tailor this procedure to your exact circumstances</h2>
+        <p class="triage-subtitle">Answer these quick questions. The engine will instantly prune non-applicable statutory requirements and adjust deadlines.</p>
+      </div>
+
+      <div class="triage-questions-grid" id="triage-questions-grid">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Dual-Lens Workspace -->
+  <main class="workspace-main">
+    <div class="workspace-container">
+
+      <!-- LEFT COLUMN: Institutional Source & Preservation Inspector -->
+      <section class="panel-column source-column" id="source-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <div class="panel-icon source-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </div>
+            <div>
+              <h3 class="panel-heading">Official Institutional Text</h3>
+              <span class="panel-sub" id="source-doc-name">8 C.F.R. § 214.2(f)(10)(ii)(C) & USCIS Form I-765 Instructions</span>
+            </div>
+          </div>
+          <div class="source-legend">
+            <span class="legend-chip red" title="Fatal Disqualification or Strict Deadline">🚨 Hard Constraint</span>
+            <span class="legend-chip yellow" title="Mandatory Evidentiary Proof">📋 Prerequisite</span>
+            <span class="legend-chip green" title="Safe Exemption or Extension">🛡️ Safe Harbor</span>
+          </div>
+        </div>
+
+        <div class="source-content-scroll" id="source-content-scroll">
+          <div class="source-doc-view" id="source-doc-view">
+            <!-- Dynamically populated with statutory citations and highlighted spans -->
+          </div>
+        </div>
+
+        <!-- Preservation Guarantee Red-Team Footer -->
+        <div class="panel-footer audit-footer">
+          <div class="audit-status">
+            <span class="status-indicator-dot online"></span>
+            <span class="status-text"><strong>Zero-Omission Verified:</strong> 12 of 12 statutory requirements, penalties & statutory citations preserved.</span>
+          </div>
+          <button class="btn-text-action" id="btn-show-audit-details">View Matrix</button>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Personalized Actionable Execution Engine -->
+      <section class="panel-column guide-column" id="guide-panel">
+        <div class="panel-header">
+          <div class="panel-title-group">
+            <div class="panel-icon guide-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div>
+              <h3 class="panel-heading">Your Personalized Step-by-Step Action Plan</h3>
+              <span class="panel-sub" id="guide-progress-summary">Step 1 of 5 Ready • Estimated Total Time: 45 Mins</span>
+            </div>
+          </div>
+
+          <div class="guide-actions">
+            <div class="tab-pill-group">
+              <button class="tab-btn active" data-tab="steps" id="tab-btn-steps">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                Action Steps
+              </button>
+              <button class="tab-btn" data-tab="form" id="tab-btn-form">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                Form Copilot
+              </button>
+              <button class="tab-btn" data-tab="timeline" id="tab-btn-timeline">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Deadlines
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 1: Step-by-Step Action Cards -->
+        <div class="tab-pane active" id="pane-steps">
+          <div class="steps-container" id="steps-container">
+            <!-- Injected dynamically via JS: rich action cards with checklists, pitfall banners, document lockers -->
+          </div>
+        </div>
+
+        <!-- TAB 2: Interactive Form Copilot & Auto-Mapper -->
+        <div class="tab-pane" id="pane-form">
+          <div class="form-copilot-card">
+            <div class="form-copilot-banner">
+              <div class="banner-icon">💡</div>
+              <div>
+                <h4>Interactive Official Form Visual Companion</h4>
+                <p>Confused by official form boxes? CivicPath maps the complex questions to plain answers and flags dangerous errors before you sign.</p>
+              </div>
+            </div>
+            
+            <div class="mock-form-layout" id="mock-form-layout">
+              <!-- Dynamically rendered visual replica of the official form with tooltips and auto-fill -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Deadline Watchdog Timeline -->
+        <div class="tab-pane" id="pane-timeline">
+          <div class="timeline-view-card">
+            <div class="timeline-intro">
+              <h4>Statutory Critical Deadlines & Countdown</h4>
+              <p>Miss one date, and an application can be legally forfeited. These calculations are grounded in statutory timelines.</p>
+            </div>
+            <div class="timeline-track" id="timeline-track">
+              <!-- Dynamic timeline nodes -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Sticky Bottom Action Bar for Progress -->
+        <div class="panel-footer guide-footer">
+          <div class="footer-progress-bar">
+            <div class="footer-progress-fill" id="action-progress-fill" style="width: 20%;"></div>
+          </div>
+          <div class="footer-flex">
+            <span class="footer-progress-text" id="action-progress-text">1 of 5 steps completed</span>
+            <div class="footer-buttons">
+              <button class="btn-secondary-sm" id="btn-reset-progress">Reset</button>
+              <button class="btn-primary-sm" id="btn-next-step">Next Action Step &rarr;</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Interactive Grounded AI Assistant Drawer (Institutional Stress-Tester) -->
+  <aside class="assistant-drawer" id="assistant-drawer">
+    <button class="drawer-toggle-btn" id="drawer-toggle-btn" title="Open AI Institutional Q&A Assistant">
+      <div class="toggle-icon-wrap">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      </div>
+      <span class="toggle-text">Institutional AI Copilot</span>
+      <span class="grounded-badge">Grounded</span>
+    </button>
+
+    <div class="drawer-content hidden" id="drawer-content">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <h4>Institutional Edge-Case Assistant</h4>
+        </div>
+        <button id="btn-close-drawer" class="btn-icon" aria-label="Close assistant">&times;</button>
+      </div>
+
+      <div class="drawer-disclaimer">
+        <span>🛡️ Answers are strictly grounded in the ingested statutory text with direct citations.</span>
+      </div>
+
+      <div class="quick-prompts-bar" id="quick-prompts-bar">
+        <!-- Dynamically injected quick questions -->
+      </div>
+
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg ai-msg">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-body">
+            <p>Hello! I am your <strong>CivicPath Grounded Copilot</strong>. Ask me any edge-case scenario regarding this procedure (e.g., missed deadlines, fee exemptions, required supporting documents, or appeal rights).</p>
+            <span class="msg-time">Grounding: 100% active</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <label for="chat-input" class="sr-only">Type a question</label>
+        <input type="text" id="chat-input" placeholder="Ask what happens if you miss a deadline..." autocomplete="off">
+        <button id="btn-send-chat" class="btn-icon-send" aria-label="Send message">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Modal: Gemini API Key & Engine Config -->
+  <div class="modal-overlay hidden" id="api-modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <h3>AI Engine & Cloud Settings</h3>
+        </div>
+        <button id="btn-close-api-modal" class="btn-icon" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-text">CivicPath AI features a <strong>Zero-Fail Architecture</strong> connected to <strong>Supabase PostgreSQL Cloud</strong>. Connect a <strong>Google Gemini API key</strong> for dynamic real-time LLM inference!</p>
+
+        <div class="form-group">
+          <label for="gemini-api-key">Google Gemini API Key (Optional)</label>
+          <input type="password" id="gemini-api-key" placeholder="AIzaSy..." class="text-input">
+          <span class="field-hint">Key is saved securely in your browser's local session storage only.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="gemini-model-select">Gemini Model Target</label>
+          <select id="gemini-model-select" class="custom-select">
+            <option value="gemini-2.0-flash">gemini-2.0-flash (Ultra Fast & Grounded - Recommended)</option>
+            <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (Deep Verification)</option>
+          </select>
+        </div>
+
+        <div class="callout-box">
+          <div class="callout-title">⚡ Supabase Database Connection</div>
+          <div class="callout-text">Connected to project <code>jhjgapijtayhsuzejbtl</code> (PostgreSQL 17). User progress is synced in real-time.</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-clear-key">Clear Key</button>
+        <button class="btn-primary" id="btn-save-key">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Formal Requirement Preservation Audit Matrix -->
+  <div class="modal-overlay hidden" id="audit-modal-overlay">
+    <div class="modal-card wide-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <h3>Dual-Pass Requirement Preservation Matrix</h3>
+        </div>
+        <button id="btn-close-audit-modal" class="btn-icon" aria-label="Close audit modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-text">Every procedural step is formally verified against the original institutional code to ensure zero omission of deadlines, evidentiary requirements, and penalty clauses.</p>
+        
+        <div class="matrix-table-wrap">
+          <table class="matrix-table" id="matrix-table">
+            <thead>
+              <tr>
+                <th>Statutory Requirement / Section</th>
+                <th>Preserved in Plain Step</th>
+                <th>Constraint Severity</th>
+                <th>Formal Verification Check</th>
+              </tr>
+            </thead>
+            <tbody id="matrix-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btn-close-audit-btn">Close Matrix</button>
+        <button class="btn-primary" id="btn-print-audit">Export Audit Certificate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Wave Floating Bar -->
+  <div class="audio-floating-bar hidden" id="audio-floating-bar">
+    <div class="audio-wave-animation">
+      <span class="wave-bar"></span>
+      <span class="wave-bar"></span>
+      <span class="wave-bar"></span>
+      <span class="wave-bar"></span>
+      <span class="wave-bar"></span>
+    </div>
+    <div class="audio-text-current">
+      <span class="audio-reading-label">Narrating Step:</span>
+      <span class="audio-snippet" id="audio-current-snippet">"File Form I-765 with the USCIS Dallas Lockbox..."</span>
+    </div>
+    <div class="audio-controls-mini">
+      <button id="btn-pause-audio" class="btn-mini">⏸️ Pause</button>
+      <button id="btn-stop-audio" class="btn-mini">⏹️ Stop</button>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Core Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>

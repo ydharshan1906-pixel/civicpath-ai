@@ -1,0 +1,11 @@
+# Secrets & Credentials
+API/
+*.env
+*.env.*
+*.log
+__pycache__/
+*.pyc
+
+# Local runtime & scratch files
+.vscode/
+.idea/
